@@ -4,9 +4,9 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 header('Content-Type: application/json');
 
-$host = '127.0.0.1';
+$host = 'localhost';
 $db   = 'kseri';
-$user = 'root';
+$user = 'iee2019004';
 $pass = '';
 $charset = 'utf8mb4';
 
