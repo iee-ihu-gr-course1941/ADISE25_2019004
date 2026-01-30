@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 $host = 'localhost';
 $db   = 'kseri';
 $user = 'iee2019004';
-$pass = '';
+$pass = '@Malister23Kostas16';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
