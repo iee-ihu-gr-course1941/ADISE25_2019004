@@ -1,9 +1,10 @@
 <?php
+// Ρυθμίσεις εμφάνισης σφαλμάτων
 ini_set('display_errors', 0);
 ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
 header('Content-Type: application/json');
-require_once 'db.php';
+require_once 'db.php';// Φορτώνει το db.php για PDO αντικείμενο $pdo
 
 $input = json_decode(file_get_contents("php://input"), true);
 $username = $input['username'] ?? null;
@@ -12,20 +13,20 @@ $token    = $input['token'] ?? null;
 /* ================= LOGIN ================= */
 if ($username) {
 
-    // Check if user already exists
+    // Έλεγχος αν ο χρήστης υπάρχει ήδη στη βάση
     $stmt = $pdo->prepare("SELECT player_id FROM players WHERE username=?");
     $stmt->execute([$username]);
     $player = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$player) {
-        // Insert new player
+         // Αν δεν υπάρχει, προσθέτουμε νέο παίκτη
         $stmt = $pdo->prepare("INSERT INTO players(username,last_active) VALUES(?,NOW())");
         $stmt->execute([$username]);
         $player_id = $pdo->lastInsertId();
     } else {
         $player_id = $player['player_id'];
     }
-
+    // Δημιουργία μοναδικού token για τον παίκτη
     $token = bin2hex(random_bytes(8));
     $stmt = $pdo->prepare("UPDATE players SET token=?, last_active=NOW() WHERE player_id=?");
     $stmt->execute([$token, $player_id]);
@@ -36,7 +37,7 @@ if ($username) {
     // ---------------- LOAD BOARD ----------------
     $board = $pdo->query("SELECT * FROM board WHERE id=1")->fetch(PDO::FETCH_ASSOC);
 
-    // Treat empty JSON arrays as empty (even if not technically empty in PHP)
+    // Έλεγχος αν πρέπει να ανακατευτεί η τράπουλα
     $needsShuffle = true;
     if($board){
         $deckArr = json_decode($board['deck'], true);
@@ -48,14 +49,14 @@ if ($username) {
     }
 
     if (!$board || $needsShuffle) {
-        // Shuffle deck
+        // Αν δεν υπάρχει board ή χρειάζεται shuffle
         $deck = $pdo->query("SELECT card_id FROM cards ORDER BY RAND()")->fetchAll(PDO::FETCH_COLUMN);
         $table = array_splice($deck, 0, 4);
         $p1_hand = array_splice($deck, 0, 6);
         $p2_hand = array_splice($deck, 0, 6);
 
         if (!$board) {
-            // Insert new board row
+            // Δημιουργία νέας γραμμής board
             $pdo->prepare("
                 INSERT INTO board(id, deck, table_pile, player1_hand, player2_hand,
                 player1_captured, player2_captured, player1_xeri, player2_xeri,
@@ -69,7 +70,7 @@ if ($username) {
                 json_encode($p2_hand)
             ]);
         } else {
-            // Update existing board
+             // Αν υπάρχει, ενημέρωση του υπάρχοντος board
             $pdo->prepare("
                 UPDATE board SET
                     deck=?,
@@ -91,7 +92,7 @@ if ($username) {
                 json_encode($p2_hand)
             ]);
         }
-        // reload board
+       // Αναφόρτωση board μετά την ανανέωση
         $board = $pdo->query("SELECT * FROM board WHERE id=1")->fetch(PDO::FETCH_ASSOC);
     }
 
@@ -123,6 +124,7 @@ if ($token) {
         exit;
     }
 
+    // Φορτώνουμε όλες τις πληροφορίες του board
     $deck      = json_decode($board['deck'], true) ?? [];
     $p1capt    = json_decode($board['player1_captured'], true) ?? [];
     $p2capt    = json_decode($board['player2_captured'], true) ?? [];
@@ -130,14 +132,15 @@ if ($token) {
     $xeri_p2   = json_decode($board['player2_xeri'], true) ?? [];
 
     /* ========= SCORE HELPERS ========= */
-    function rank($c){ return ($c-1)%13+1; }
-    function suit($c){
+    function rank($c){ return ($c-1)%13+1; }// Υπολογίζει αριθμό κάρτας
+    function suit($c){// Υπολογίζει φύλλο κάρτας
         if($c<=13) return 'spades';
         if($c<=26) return 'hearts';
         if($c<=39) return 'diamonds';
         return 'clubs';
     }
 
+// Υπολογισμός σκορ
     function calcScore($captured, $xeri){
         $score = 0;
         foreach($xeri as $c){
@@ -173,7 +176,7 @@ if ($token) {
         else $winner = 'Draw';
     }
 
-    // Get active players with usernames
+     // Επιστροφή JSON με τρέχουσα κατάσταση παιχνιδιού
     $players = $pdo->query("SELECT player_id, username FROM players ORDER BY player_id ASC LIMIT 2")->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([

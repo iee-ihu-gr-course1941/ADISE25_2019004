@@ -30,6 +30,7 @@ body { font-family: Arial; background:#f0f0f0; }
 </head>
 <body>
 
+    <!-- ---------------- Login Form ---------------- -->
 <div id="login">
   <h2>Ξερή Login</h2>
   <input id="username" placeholder="Username">
@@ -37,6 +38,7 @@ body { font-family: Arial; background:#f0f0f0; }
   <p id="loginMsg"></p>
 </div>
 
+<!-- ---------------- Game Interface ---------------- -->
 <div id="game" style="display:none;">
   <h2>Ξερή Game</h2>
   <p>Player: <span id="playerName"></span></p>
@@ -106,7 +108,7 @@ function login(){
         document.getElementById("login").style.display="none";
         document.getElementById("game").style.display="block";
         loadGame();
-        setInterval(loadGame,2000);
+        setInterval(loadGame,2000); // refresh κάθε 2 δεύτερα
     });
 }
 
@@ -121,7 +123,7 @@ function renderHand(hand){
         d.className="card";
         d.innerText=c.short;
         d.style.color=c.suit==='hearts'?'red':c.suit==='diamonds'?'blue':c.suit==='clubs'?'green':'black';
-        d.onclick=()=>playCard(id);
+        d.onclick=()=>playCard(id);// κλικ για να παίξει κάρτα
         div.appendChild(d);
     });
 }
@@ -132,7 +134,7 @@ function renderTable(pile){
     const p=document.createElement("div");
     p.className="pile";
     if(pile && pile.length){
-        const lastCardId = pile[pile.length-1]; // only top card
+        const lastCardId = pile[pile.length-1]; // εμφανίζουμε μόνο την κορυφαία κάρτα
         const c = cardIdMap[lastCardId];
         if(c){
             const d=document.createElement("div");
