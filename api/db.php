@@ -14,12 +14,11 @@ try {
         $pass,
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
-    echo json_encode(["db" => "connected"]);
 } catch (PDOException $e) {
     echo json_encode([
         "error" => "Database connection failed",
         "message" => $e->getMessage()
     ]);
+    exit;
 }
-
 
