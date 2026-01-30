@@ -1,26 +1,25 @@
 <?php
 ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-header('Content-Type: application/json');
 
-$host = 'localhost';
-$db   = 'kseri';
-$user = 'iee2019004';
-$pass = '@Malister23Kostas16';
-$charset = 'utf8mb4';
-
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
-$options = [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-];
+$db     = 'kseri'; 
+$user   = 'iee2019004'; 
+$pass   = ''; 
+$socket = '/home/student/iee/2019/iee2019004/mysql/run/mysql.sock';
 
 try {
-    $pdo = new PDO($dsn, $user, $pass, $options);
-} catch (\PDOException $e) {
-    http_response_code(500);
-    echo json_encode(['error'=>'Database connection failed','message'=>$e->getMessage()]);
-    exit;
+    $pdo = new PDO(
+        "mysql:dbname=$db;charset=utf8;unix_socket=$socket",
+        $user,
+        $pass,
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+    echo json_encode(["db" => "connected"]);
+} catch (PDOException $e) {
+    echo json_encode([
+        "error" => "Database connection failed",
+        "message" => $e->getMessage()
+    ]);
 }
+
 
