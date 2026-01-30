@@ -1,10 +1,215 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>My Project</title>
+<meta charset="UTF-8">
+<title>Ξερή Game</title>
+<style>
+body { font-family: Arial; background:#f0f0f0; }
+#login, #game { margin:20px; }
+.card {
+    display:inline-block;
+    padding:10px;
+    margin:2px;
+    border:1px solid #333;
+    border-radius:5px;
+    cursor:pointer;
+    min-width:40px;
+    text-align:center;
+    font-weight:bold;
+}
+#hand { margin-top:10px; }
+#table { margin-top:10px; }
+.pile {
+    border:1px dashed #555;
+    padding:10px;
+    min-height:60px;
+    min-width:60px;
+    display:inline-block;
+}
+</style>
 </head>
 <body>
-  <h1>It works!</h1>
-  <p>Apache Alias is configured correctly.</p>
+
+<div id="login">
+  <h2>Ξερή Login</h2>
+  <input id="username" placeholder="Username">
+  <button onclick="login()">Join</button>
+  <p id="loginMsg"></p>
+</div>
+
+<div id="game" style="display:none;">
+  <h2>Ξερή Game</h2>
+  <p>Player: <span id="playerName"></span></p>
+  <p>Turn: <span id="turn">-</span></p>
+  <p>Round: <span id="round">—</span></p>
+  <p>Deck cards left: <span id="deckCount">—</span></p>
+
+  <h3>Your Hand</h3>
+  <div id="hand"></div>
+
+  <h3>Table</h3>
+  <div id="table"></div>
+
+  <h3>Captured Cards</h3>
+  <p id="capturedDisplay"></p>
+
+  <h3 id="gameResult" style="display:none;"></h3>
+
+  <button onclick="leaveGame()">Leave Game</button>
+  <p id="resetMsg"></p>
+</div>
+
+<script>
+// ---------------- CARD MAP ----------------
+const cardMap = [
+    {id:1,short:'♠A',suit:'spades'},{id:2,short:'♠2',suit:'spades'},{id:3,short:'♠3',suit:'spades'},
+    {id:4,short:'♠4',suit:'spades'},{id:5,short:'♠5',suit:'spades'},{id:6,short:'♠6',suit:'spades'},
+    {id:7,short:'♠7',suit:'spades'},{id:8,short:'♠8',suit:'spades'},{id:9,short:'♠9',suit:'spades'},
+    {id:10,short:'♠10',suit:'spades'},{id:11,short:'♠J',suit:'spades'},{id:12,short:'♠Q',suit:'spades'},{id:13,short:'♠K',suit:'spades'},
+    {id:14,short:'♥A',suit:'hearts'},{id:15,short:'♥2',suit:'hearts'},{id:16,short:'♥3',suit:'hearts'},
+    {id:17,short:'♥4',suit:'hearts'},{id:18,short:'♥5',suit:'hearts'},{id:19,short:'♥6',suit:'hearts'},
+    {id:20,short:'♥7',suit:'hearts'},{id:21,short:'♥8',suit:'hearts'},{id:22,short:'♥9',suit:'hearts'},
+    {id:23,short:'♥10',suit:'hearts'},{id:24,short:'♥J',suit:'hearts'},{id:25,short:'♥Q',suit:'hearts'},{id:26,short:'♥K',suit:'hearts'},
+    {id:27,short:'♦A',suit:'diamonds'},{id:28,short:'♦2',suit:'diamonds'},{id:29,short:'♦3',suit:'diamonds'},
+    {id:30,short:'♦4',suit:'diamonds'},{id:31,short:'♦5',suit:'diamonds'},{id:32,short:'♦6',suit:'diamonds'},
+    {id:33,short:'♦7',suit:'diamonds'},{id:34,short:'♦8',suit:'diamonds'},{id:35,short:'♦9',suit:'diamonds'},
+    {id:36,short:'♦10',suit:'diamonds'},{id:37,short:'♦J',suit:'diamonds'},{id:38,short:'♦Q',suit:'diamonds'},{id:39,short:'♦K',suit:'diamonds'},
+    {id:40,short:'♣A',suit:'clubs'},{id:41,short:'♣2',suit:'clubs'},{id:42,short:'♣3',suit:'clubs'},
+    {id:43,short:'♣4',suit:'clubs'},{id:44,short:'♣5',suit:'clubs'},{id:45,short:'♣6',suit:'clubs'},
+    {id:46,short:'♣7',suit:'clubs'},{id:47,short:'♣8',suit:'clubs'},{id:48,short:'♣9',suit:'clubs'},
+    {id:49,short:'♣10',suit:'clubs'},{id:50,short:'♣J',suit:'clubs'},{id:51,short:'♣Q',suit:'clubs'},{id:52,short:'♣K',suit:'clubs'}
+];
+const cardIdMap={}; cardMap.forEach(c=>cardIdMap[c.id]=c);
+
+// ---------------- STATE ----------------
+const API="./api/";
+let playerId, playerName, token;
+
+// ---------------- LOGIN ----------------
+function login(){
+    const username=document.getElementById("username").value.trim();
+    if(!username){ alert("Enter username"); return; }
+
+    fetch(API+"game.php",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({username})
+    })
+    .then(r=>r.json())
+    .then(data=>{
+        if(data.error){ document.getElementById("loginMsg").innerText=data.error; return; }
+        token=data.token;
+        playerId=data.player_id;
+        playerName=data.username;
+        document.getElementById("playerName").innerText = playerName;
+        document.getElementById("login").style.display="none";
+        document.getElementById("game").style.display="block";
+        loadGame();
+        setInterval(loadGame,2000);
+    });
+}
+
+// ---------------- RENDER ----------------
+function renderHand(hand){
+    const div=document.getElementById("hand");
+    div.innerHTML="";
+    (hand||[]).forEach(id=>{
+        const c=cardIdMap[id];
+        if(!c) return;
+        const d=document.createElement("div");
+        d.className="card";
+        d.innerText=c.short;
+        d.style.color=c.suit==='hearts'?'red':c.suit==='diamonds'?'blue':c.suit==='clubs'?'green':'black';
+        d.onclick=()=>playCard(id);
+        div.appendChild(d);
+    });
+}
+
+function renderTable(pile){
+    const div=document.getElementById("table");
+    div.innerHTML="";
+    const p=document.createElement("div");
+    p.className="pile";
+    if(pile && pile.length){
+        const lastCardId = pile[pile.length-1]; // only top card
+        const c = cardIdMap[lastCardId];
+        if(c){
+            const d=document.createElement("div");
+            d.className="card";
+            d.innerText = c.short;
+            d.style.color = c.suit==='hearts'?'red':c.suit==='diamonds'?'blue':c.suit==='clubs'?'green':'black';
+            p.appendChild(d);
+        }
+    }
+    div.appendChild(p);
+}
+
+function renderCaptured(p1,p2){
+    let capText = "";
+    if(p1) capText += `Player 1: ${p1.length} `;
+    if(p2) capText += ` | Player 2: ${p2.length}`;
+    document.getElementById("capturedDisplay").innerText = capText;
+}
+
+// ---------------- LOAD GAME ----------------
+function loadGame(){
+    fetch(API+"game.php",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({token})
+    })
+    .then(r=>r.json())
+    .then(d=>{
+        if(d.error){ console.log(d.error); return; }
+
+        // determine hand to show
+        const hand = (playerId % 2 === 1) ? d.player1_hand : d.player2_hand;
+        renderHand(hand);
+        renderTable(d.table_pile);
+        renderCaptured(d.player1_captured,d.player2_captured);
+
+        document.getElementById("turn").innerText=d.current_turn;
+        document.getElementById("round").innerText=d.round;
+        document.getElementById("deckCount").innerText=d.deck_count;
+
+        const result = document.getElementById("gameResult");
+        if(d.status==='finished'){
+            result.style.display='block';
+            result.innerText =
+                `🏁 GAME OVER\n`+
+                `Player 1 score: ${d.final_score.player1}\n`+
+                `Player 2 score: ${d.final_score.player2}\n`+
+                `🏆 WINNER: ${d.winner}`;
+
+            // Auto-reset board to waiting
+            fetch(API+"move.php",{
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({token, action:"reset_game"})
+            }).then(()=>setTimeout(loadGame,500));
+        } else {
+            result.style.display='none';
+        }
+    });
+}
+
+// ---------------- PLAY CARD ----------------
+function playCard(card){
+    fetch(API+"move.php",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({token, card})
+    }).then(r=>r.json()).then(loadGame);
+}
+
+// ---------------- LEAVE GAME ----------------
+function leaveGame(){
+    fetch(API+"move.php",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({token, action:"leave"})
+    }).then(r=>r.json()).then(()=>location.reload());
+}
+</script>
 </body>
 </html>

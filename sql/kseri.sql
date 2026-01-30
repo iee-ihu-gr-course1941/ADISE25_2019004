@@ -25,20 +25,22 @@ CREATE TABLE IF NOT EXISTS `board` (
   `current_turn` tinyint(4) NOT NULL CHECK (`current_turn` in (1,2)),
   `player1_hand` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`player1_hand`)),
   `player2_hand` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`player2_hand`)),
-  `table_pile` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`table_pile`)),
   `player1_captured` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`player1_captured`)),
   `player2_captured` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`player2_captured`)),
   `forced_draw` int(11) DEFAULT 0,
   `chosen_suit` enum('spades','hearts','diamonds','clubs') DEFAULT NULL,
   `status` enum('waiting','ready','initial_deal','active','round_over','finished') NOT NULL,
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `table_pile` text NOT NULL,
+  `player1_xeri` text DEFAULT '[]',
+  `player2_xeri` text DEFAULT '[]',
+  `deck` text DEFAULT '[]',
+  `round_number` int(11) DEFAULT 1,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table kseri.board: ~0 rows (approximately)
 DELETE FROM `board`;
-INSERT INTO `board` (`id`, `current_turn`, `player1_hand`, `player2_hand`, `table_pile`, `player1_captured`, `player2_captured`, `forced_draw`, `chosen_suit`, `status`, `updated_at`) VALUES
-	(1, 1, '[]', '[]', '[]', '[]', '[]', 0, NULL, 'waiting', '2026-01-03 18:48:25');
 
 -- Dumping structure for πίνακας kseri.cards
 CREATE TABLE IF NOT EXISTS `cards` (
@@ -116,19 +118,73 @@ CREATE TABLE IF NOT EXISTS `deck` (
   CONSTRAINT `deck_ibfk_1` FOREIGN KEY (`card_id`) REFERENCES `cards` (`card_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table kseri.deck: ~0 rows (approximately)
+-- Dumping data for table kseri.deck: ~52 rows (approximately)
 DELETE FROM `deck`;
+INSERT INTO `deck` (`position`, `card_id`) VALUES
+	(1, 30),
+	(2, 50),
+	(3, 33),
+	(4, 15),
+	(5, 36),
+	(6, 2),
+	(7, 29),
+	(8, 10),
+	(9, 32),
+	(10, 4),
+	(11, 35),
+	(12, 3),
+	(13, 44),
+	(14, 7),
+	(15, 1),
+	(16, 31),
+	(17, 46),
+	(18, 45),
+	(19, 9),
+	(20, 34),
+	(21, 39),
+	(22, 13),
+	(23, 14),
+	(24, 5),
+	(25, 52),
+	(26, 37),
+	(27, 26),
+	(28, 28),
+	(29, 38),
+	(30, 40),
+	(31, 11),
+	(32, 27),
+	(33, 49),
+	(34, 12),
+	(35, 21),
+	(36, 43),
+	(37, 23),
+	(38, 41),
+	(39, 8),
+	(40, 42),
+	(41, 25),
+	(42, 24),
+	(43, 6),
+	(44, 16),
+	(45, 47),
+	(46, 48),
+	(47, 17),
+	(48, 20),
+	(49, 18),
+	(50, 19),
+	(51, 51),
+	(52, 22);
 
 -- Dumping structure for πίνακας kseri.players
 CREATE TABLE IF NOT EXISTS `players` (
-  `player_id` tinyint(4) NOT NULL CHECK (`player_id` in (1,2)),
+  `player_id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(20) DEFAULT NULL,
   `token` varchar(100) DEFAULT NULL,
   `last_action` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `last_active` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`player_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table kseri.players: ~0 rows (approximately)
+-- Dumping data for table kseri.players: ~2 rows (approximately)
 DELETE FROM `players`;
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
