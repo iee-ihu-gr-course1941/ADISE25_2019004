@@ -4,7 +4,7 @@ error_reporting(E_ALL);
 
 $db     = 'kseri'; 
 $user   = 'iee2019004'; 
-$pass   = ''; 
+$pass   = '@Malister23Kostas16'; 
 $socket = '/home/student/iee/2019/iee2019004/mysql/run/mysql.sock';
 
 try {
